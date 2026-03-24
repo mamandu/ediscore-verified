@@ -2,21 +2,33 @@
 
 # EdisCore Verified
 
-**Code-execution verification for AI reasoning tasks.**
+**Not a new way to solve. A new way to know when you've solved.**
 
-*Don't trust the answer. Trust the proof.*
+*Verification as a metric, not just a mechanism.*
 
-[![Accuracy](https://img.shields.io/badge/ARC--AGI--1-84%25-brightgreen?style=flat-square)]()
-[![Trust](https://img.shields.io/badge/Trust-96.2%25-blue?style=flat-square)]()
-[![Cost](https://img.shields.io/badge/Cost-~%240.50%2Ftask-orange?style=flat-square)]()
-[![Model](https://img.shields.io/badge/Claude-Opus%204.6-8A2BE2?style=flat-square)]()
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)]()
+![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 </div>
 
 ---
 
-A 200-line Python script that forces AI to prove its answers by writing executable code, then mechanically checks the output against training data. If the code doesn't reproduce every training example, the answer doesn't ship.
+Code-execution verification for AI reasoning tasks. EdisCore asks a model to express a solution as executable Python, runs that code against the training examples, and ships only when the result survives mechanical checking. The contribution is not the solve-and-verify pattern itself, but the measurement layer around it: verified vs. unverified answers, false-pass rate, and trust on shipped outputs.
+
+The ARC-AGI-1 leaderboard emphasizes score and cost; this project adds false-pass rate, shipped-vs-withdrawn accounting, and trust on shipped answers.
+
+## What This Measures
+
+Most benchmarks report one number: accuracy. EdisCore reports four:
+
+| Metric | Value | What it means |
+|--------|-------|---------------|
+| Accuracy | 84.0% (336/400) | How often the system got the right answer |
+| Verified correct | 76.0% (304/400) | How often it got the right answer *and proved it* |
+| Trust on shipped | 96.2% (304/316) | When it says "verified," how often it's right |
+| False pass rate | 3.0% (12/400) | How often verification passed but the answer was wrong |
+
+The trust rate is the headline. When the system ships a verified answer, it is correct 96.2% of the time. When full verification fails, the system withdraws rather than guess. The remaining risk is false passes: code that fits the training examples but encodes the wrong rule.
 
 ## Results
 
@@ -24,17 +36,14 @@ A 200-line Python script that forces AI to prove its answers by writing executab
 
 | Metric | Value |
 |--------|-------|
-| Correct | **336 / 400 (84.0%)** |
-| Shipped (verified) | **304** |
+| Correct | 336 / 400 (84.0%) |
+| Shipped (verified) | 316 |
+| Verified correct | 304 |
 | False passes | 12 |
-| Trust on shipped answers | **96.2%** |
-| Withdrawn (refused to ship) | 52 |
+| Trust on shipped answers | 96.2% |
+| Withdrawn (refused to ship) | 84 |
 | Cost | ~$0.50/task |
 | Model | Claude Opus 4.6 |
-
-304 answers were verified correct by code execution. 12 passed verification but were wrong (false passes — the model wrote code that happened to produce correct training outputs but encoded the wrong rule). 52 tasks were withdrawn: the system could not verify an answer and chose silence over guessing.
-
-> When the system says "verified," it is correct 96.2% of the time.
 
 ## How It Works
 
@@ -49,18 +58,30 @@ Solve → Write Python code implementing the rule → Execute code against train
 
 The verification is mechanical — no LLM judges the output. Python executes the code, compares the result grid cell by cell, and returns pass or fail. The model cannot talk its way past the check.
 
-### The Core Insight
+### Why Mechanical Verification
 
-AI checking its own work has the same blind spots as the original solver. Ask a model to verify its own answer and it will confidently confirm its own mistakes. But code has no blind spots. It matches or it doesn't. There is no interpretation. No negotiation. Pure execution.
+AI checking its own work has the same blind spots as the original solver. Ask a model to verify its own answer and it will confidently confirm its own mistakes. Code has no blind spots. It matches or it doesn't. There is no interpretation. No negotiation. Pure execution.
 
-### What Makes This Different
+### Three Outcomes
 
-Most AI benchmarking treats every answer equally. EdisCore splits the world into two categories:
+Every task produces one of three results:
 
-- **Verified**: the model wrote code that reproduces all training examples. High confidence.
-- **Unverified**: the model couldn't prove its answer. Withdrawn.
+- **Verified correct** (304) — the system proved its answer and was right. Safe to ship.
+- **Conservative miss** (32) — the system got the right answer but couldn't prove it. Withdrawn anyway.
+- **Safe failure** (52) — the system couldn't verify and didn't ship. Silence over guessing.
 
-This creates a trust layer. Instead of asking "is the model smart enough?", you ask "does the model know when it's right?"
+The dangerous quadrant — verified but wrong — is the false pass problem. 12 out of 400 tasks.
+
+## Outcome Matrix
+
+```
+                    Verified    Unverified
+                  ┌───────────┬───────────┐
+    Correct       │    304    │     32    │
+                  ├───────────┼───────────┤
+    Incorrect     │     12    │     52    │
+                  └───────────┴───────────┘
+```
 
 ## Architecture
 
@@ -73,43 +94,26 @@ Pass 3: Solve with accumulated errors → verify 100% → ship if verified
 
 Each pass uses Claude Opus 4.6 with extended thinking (10K token budget). Temperature 1. No fine-tuning. No ensemble. No external tools beyond the Python executor.
 
-## Evaluation Breakdown
-
-### Pass Distribution
+## Pass Distribution
 
 ```
-Pass 1  ████████████████████████████████████████  287 tasks (71.8%)
-Pass 2  ██                                        17 tasks  (4.2%)
-Pass 3  ████████████                              96 tasks (24.0%)
+Resolved on pass 1  ████████████████████████████████████████  287 tasks (71.8%)
+Resolved on pass 2  ██                                        17 tasks  (4.2%)
+Reached pass 3      ████████████                              96 tasks (24.0%)
 ```
 
-Most tasks verify on the first attempt. When the model is right, it usually knows immediately.
+Most successful verifications happen on the first attempt.
 
-### Token Economy
+## Token Economy
 
-| | Avg Tokens | Avg Time |
-|--|-----------|----------|
+| Bucket | Avg Tokens | Avg Time |
+|--------|-----------|----------|
 | 1-pass solves | ~8K | ~70s |
 | 3-pass solves | ~56K | ~580s |
-| **Total** | **9.2M tokens** | **~$200** |
+
+Total tokens: ~9.2M across 400 tasks. Estimated total cost: ~$200.
 
 Hard tasks that burn three retry passes cost ~7x more than easy ones. The long tail is expensive.
-
-### Outcome Matrix
-
-```
-                    Verified    Unverified
-                  ┌───────────┬───────────┐
-    Correct       │    304    │     32    │
-                  ├───────────┼───────────┤
-    Incorrect     │     12    │     52    │
-                  └───────────┴───────────┘
-```
-
-- **304 verified correct** — the system works as intended
-- **32 correct but unverified** — the model got it right but couldn't prove it (conservative misses)
-- **12 false passes** — verified but wrong (the dangerous quadrant)
-- **52 withdrawn** — couldn't verify, didn't ship (safe failures)
 
 ## Failure Analysis
 
@@ -122,12 +126,6 @@ All 12 are **replicating liars**: the model writes code that produces correct ou
 - 1 on pass 3
 
 These are irreducible by single-path verification alone. Addressing them requires parallel independent solves with consensus checking.
-
-## Cost
-
-~$0.50/task on Claude Opus 4.6 with prompt caching. Total cost for the 400-task evaluation: approximately $200.
-
-Token distribution: 9.2M total, averaging 23K tokens/task. The cost is dominated by hard tasks that burn three retry passes (~56K tokens each). Easy tasks that verify on pass 1 average ~8K tokens.
 
 ## Files
 
@@ -147,11 +145,18 @@ python ediscore_verified.py --tasks 400
 # Results saved as JSON with per-task breakdown
 ```
 
+## What This Is
+
+- A verification layer that separates proven answers from guesses
+- A trust metric that reports *when the system knows it's right*, not just how often it's right
+- A measurement framework: false pass rate, verified vs unverified, trust at cost
+
 ## What This Is Not
 
+- Not a new architecture. Code-verified solvers exist. The contribution is the measurement.
 - Not a fine-tuned model. The script wraps a stock Claude Opus 4.6 API call.
 - Not an ensemble. One model, one path per pass, up to three passes.
-- Not competing on ARC-AGI-2. These results are on ARC-AGI-1 public evaluation (400 tasks). Different dataset, different difficulty. Numbers across benchmarks are not directly comparable.
+- Not competing on ARC-AGI-2. These results are on ARC-AGI-1 public evaluation (400 tasks). Different dataset, different difficulty.
 
 ## V3 (In Progress)
 
@@ -160,7 +165,8 @@ Parallel verification architecture addressing the false pass problem:
 - Two independent solves run in parallel with different prompts
 - Corroboration required before shipping: both must verify and agree
 - Deep tiebreak solver (25K thinking budget) for disagreements
-- Pilot results: 19/20 correct, 0 false passes, 100% trust on verified
+
+In a targeted 20-task V3 pilot: 19/20 correct, 17 verified correct, 0 false passes. The only miss occurred outside the verified lane.
 
 Full 400-task V3 evaluation forthcoming.
 
@@ -182,6 +188,6 @@ MIT
 
 <div align="center">
 
-*Built in silence. Transmitted in truth.*
+*Not a new way to solve. A new way to know when you've solved.*
 
 </div>
