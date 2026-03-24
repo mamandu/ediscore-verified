@@ -69,7 +69,7 @@ These are irreducible by single-path verification alone. Addressing them require
 
 ## Cost
 
-~$0.50/task on Claude Opus 4.5 with prompt caching. Total cost for the 400-task evaluation: approximately $200.
+~$0.50/task on Claude Opus 4.6 with prompt caching. Total cost for the 400-task evaluation: approximately $200.
 
 Token distribution: 9.2M total, averaging 23K tokens/task. The cost is dominated by hard tasks that burn three retry passes (~56K tokens each). Easy tasks that verify on pass 1 average ~8K tokens.
 
