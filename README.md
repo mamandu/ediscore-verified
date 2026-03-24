@@ -16,7 +16,7 @@ A 200-line Python script that forces AI to prove its answers by writing executab
 | Trust on shipped answers | 96.2% |
 | Withdrawn (refused to ship) | 52 |
 | Cost | ~$0.50/task |
-| Model | Claude Opus 4.5 |
+| Model | Claude Opus 4.6 |
 
 304 answers were verified correct by code execution. 12 passed verification but were wrong (false passes — the model wrote code that happened to produce correct training outputs but encoded the wrong rule). 52 tasks were withdrawn: the system could not verify an answer and chose silence over guessing.
 
