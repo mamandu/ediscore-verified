@@ -95,7 +95,7 @@ python ediscore_verified.py --tasks 400
 
 ## What This Is Not
 
-- Not a fine-tuned model. The script wraps a stock Claude Opus 4.5 API call.
+- Not a fine-tuned model. The script wraps a stock Claude Opus 4.6 API call.
 - Not an ensemble. One model, one path per pass, up to three passes.
 - Not competing on ARC-AGI-2. These results are on ARC-AGI-1 public evaluation (400 tasks). Different dataset, different difficulty. Numbers across benchmarks are not directly comparable.
 
