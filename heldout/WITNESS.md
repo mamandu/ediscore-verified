@@ -18,6 +18,7 @@ instrument produced a single reading**.
 |---|---|
 | `PREREGISTRATION_2026-08-19.md` | `700dcf28d54f84ed136ce8e9b2f72552199ea47a57b140b8b1261f46d60b1990` |
 | `AMENDMENT_2026-08-23_P1-denominator.md` | `bd87b67f2cbf7afa245fb9156660316c87403857c97c81f413c792bb61748ab4` |
+| `AMENDMENT_2026-09-18_canonical-prompt.md` | `6c99c6bf095dc9569950c08498774fab6d2cc381afc6fe2e52a23d477be88608` |
 
 - **`ediscore_heldout.py`** — runner v3: the canonical engine verbatim
   (prompt, retry, params, mechanical verification), plus only the held-out
@@ -37,6 +38,13 @@ run is armed and unfired. The amendment (written 2026-08-23, also before any
 result) resolves a drafting contradiction between §2 and P1 of the
 preregistration — pool denominators restated against the analyzed set, every
 rounding taken against the instrument. The engine is untouched.
+
+**2026-09-18 — a second amendment, also before any result.**
+`AMENDMENT_2026-09-18_canonical-prompt.md` corrects the prompt named in §3 of
+the preregistration: the canonical engine's prompt is the 402-character
+`PROMPT` this runner has carried since its first commit, not the
+1,833-character one the parenthesis names. The engine is untouched. The run is
+still armed and unfired; the only API response on file is the August 401.
 
 ## The standing commitment
 
